@@ -33,12 +33,16 @@
     (nations->jsexpr (nations-fetch))))
 
 (define (list-game-data request)
+  (define nations (nations-fetch))
+  (define provinces (provinces-fetch))
+  (define province-connections (province-connections-fetch))
+  (define users (users-fetch))
   (json-response
     (hash
-      'nations (nations->jsexpr (nations-fetch))
-      'provinces (provinces->jsexpr (provinces-fetch))
-      'provinceConnections (province-connections->jsexpr (province-connections-fetch))
-      'users (users->jsexpr (users-fetch)))))
+      'nations (nations->jsexpr nations)
+      'provinces (provinces->jsexpr provinces)
+      'provinceConnections (province-connections->jsexpr province-connections)
+      'users (users->jsexpr users))))
 
 (define (start request)
   (api-dispatch request))
