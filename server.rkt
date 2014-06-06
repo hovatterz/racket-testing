@@ -20,9 +20,9 @@
 (define-values
   (api-dispatch api-url)
   (dispatch-rules
-    [("nations") list-nations]
-    [("provinces") list-provinces]
-    [("game") list-game-data]))
+    [("api" "nations.json") list-nations]
+    [("api" "provinces.json") list-provinces]
+    [("api" "game.json") list-game-data]))
 
 (define (list-provinces request)
   (json-response
