@@ -11,8 +11,7 @@
         'maxPopulation (province-max-population province)
         'currentPopulation (province-current-population province)
         'centerX (province-center-x province)
-        'centerY (province-center-y province)
-        ))
+        'centerY (province-center-y province)))
 
 (define (provinces->jsexpr provinces)
   (map province->jsexpr provinces))
