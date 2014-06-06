@@ -1,7 +1,7 @@
-(require web-server/servlet)
-(require web-server/dispatch)
-(require json)
-(require db)
+(require web-server/servlet
+         web-server/dispatch
+         json
+         db)
 
 (include "db.rkt")
 (include "models/province.rkt")
