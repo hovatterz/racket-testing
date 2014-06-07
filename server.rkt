@@ -57,7 +57,6 @@
     (hash
       'nations (nations->jsexpr nations)
       'provinces (provinces->jsexpr provinces)
-      'provinceConnections (province-connections->jsexpr province-connections)
       'users (users->jsexpr users))))
 
 (define (start request)
