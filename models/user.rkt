@@ -1,11 +1,11 @@
 (struct user (id email-address display-name password-digest created-at updated-at access-token))
 
-(define (user->jsexpr user)
-  (hash 'id (user-id user)
-        'displayName (user-display-name user)))
+(define (user->jsexpr u)
+  (hash 'id (user-id u)
+        'displayName (user-display-name u)))
 
-(define (users->jsexpr users)
-  (map user->jsexpr users))
+(define (users->jsexpr us)
+  (map user->jsexpr us))
 
 (define (users-fetch)
   (map

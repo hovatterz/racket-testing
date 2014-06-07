@@ -9,6 +9,13 @@
 (include "models/nation.rkt")
 (include "models/user.rkt")
 
+(define (list-group-by key-method lst)
+  (foldl (lambda (p h)
+           (let ([n (key-method p)])
+             (hash-set h n (cons p (hash-ref h n '())))))
+         #hash()
+         lst))
+
 (define (json-response jsexpr)
   (response/full
     200 #"OK"
@@ -37,6 +44,15 @@
   (define provinces (provinces-fetch))
   (define province-connections (province-connections-fetch))
   (define users (users-fetch))
+
+  (let ([nation-provinces (list-group-by province-nation-id provinces)])
+    (for ([n (in-list nations)])
+      (set-nation-provinces! n (hash-ref nation-provinces (nation-id n) '()))))
+
+  (let ([province-neighbors (list-group-by province-connection-province-id province-connections)])
+    (for ([p (in-list provinces)])
+      (set-province-neighbors! p (hash-ref province-neighbors (province-id p) '()))))
+
   (json-response
     (hash
       'nations (nations->jsexpr nations)
