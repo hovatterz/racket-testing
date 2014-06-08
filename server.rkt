@@ -4,19 +4,13 @@
          db
          (planet dmac/spin))
 
+(include "common.rkt")
 (include "db.rkt")
 (include "models/province.rkt")
 (include "models/province_connection.rkt")
 (include "models/nation.rkt")
 (include "models/user.rkt")
 (include "models/army.rkt")
-
-(define (list-group-by key-method lst)
-  (foldl (lambda (p h)
-           (let ([n (key-method p)])
-             (hash-set h n (cons p (hash-ref h n '())))))
-         #hash()
-         lst))
 
 (define (json-response-maker status headers body)
   (response status
