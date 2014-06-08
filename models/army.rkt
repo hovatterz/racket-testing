@@ -18,6 +18,3 @@
   (map
     (lambda (row) (apply army (vector->list row)))
     (fetch-records "armies")))
-
-(define (armies-with-nation-id nid as)
-  (filter (lambda (p) (equal? (army-nation-id p) nid)) as))
