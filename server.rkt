@@ -1,7 +1,8 @@
 (require web-server/servlet
          web-server/dispatch
          json
-         db)
+         db
+         (planet dmac/spin))
 
 (include "db.rkt")
 (include "models/province.rkt")
@@ -17,66 +18,52 @@
          #hash()
          lst))
 
-(define (json-response jsexpr)
-  (response/full
-    200 #"OK"
-    (current-seconds)
-    #"application/json; charset=utf-8"
-    (list)
-    (list (jsexpr->bytes jsexpr #:null sql-null))))
+(define (json-response-maker status headers body)
+  (response status
+            (status->message status)
+            (current-seconds)
+            #"application/json; charset=utf-8"
+            headers
+            (let ([jsexpr-body (case status
+                                 [(404) (string->jsexpr "{\"error\": 404, \"message\": \"Not Found\"}")]
+                                 [else body])])
+              (lambda (op) (write-json (force jsexpr-body) op #:null sql-null)))))
 
-(define-values
-  (api-dispatch api-url)
-  (dispatch-rules
-    [("api" "nations.json") list-nations]
-    [("api" "provinces.json") list-provinces]
-    [("api" "game.json") list-game-data]))
+(define (json-get path handler)
+  (define-handler "GET" path handler json-response-maker))
 
-(define (list-provinces request)
-  (json-response
-    (provinces->jsexpr (provinces-fetch))))
+(json-get
+  "/api/game.json"
+  (lambda (req)
+    (define nations (nations-fetch))
+    (define provinces (provinces-fetch))
+    (define province-connections (province-connections-fetch))
+    (define users (users-fetch))
+    (define armies (armies-fetch))
 
-(define (list-nations request)
-  (json-response
-    (nations->jsexpr (nations-fetch))))
+    (let ([provinces-by-nation (list-group-by province-nation-id provinces)]
+          [armies-by-nation (list-group-by army-nation-id armies)])
+      (for ([n (in-list nations)])
+        (let ([id (nation-id n)])
+          (set-nation-provinces! n (hash-ref provinces-by-nation id '()))
+          (set-nation-armies! n (hash-ref armies-by-nation id '())))))
 
-(define (list-game-data request)
-  (define nations (nations-fetch))
-  (define provinces (provinces-fetch))
-  (define province-connections (province-connections-fetch))
-  (define users (users-fetch))
-  (define armies (armies-fetch))
+    (let ([armies-by-province (list-group-by army-province-id armies)]
+          [connections-by-province (list-group-by province-connection-province-id province-connections)]
+          [armies-by-location (list-group-by army-location-id armies)] )
+      (for ([p (in-list provinces)])
+        (let ([id (province-id p)])
+          (set-province-neighbors! p (hash-ref connections-by-province id '()))
+          (set-province-occupying-armies! p (hash-ref armies-by-location id '()))
+          (set-province-armies! p (hash-ref armies-by-province id '())))))
 
-  (let ([provinces-by-nation (list-group-by province-nation-id provinces)]
-        [armies-by-nation (list-group-by army-nation-id armies)])
-    (for ([n (in-list nations)])
-      (let ([id (nation-id n)])
-        (set-nation-provinces! n (hash-ref provinces-by-nation id '()))
-        (set-nation-armies! n (hash-ref armies-by-nation id '())))))
+    (hash
+      'armies (armies->jsexpr armies)
+      'nations (nations->jsexpr nations)
+      'provinces (provinces->jsexpr provinces)
+      'users (users->jsexpr users))))
 
-  (let ([armies-by-province (list-group-by army-province-id armies)]
-        [connections-by-province (list-group-by province-connection-province-id province-connections)]
-        [armies-by-location (list-group-by army-location-id armies)] )
-    (for ([p (in-list provinces)])
-      (let ([id (province-id p)])
-        (set-province-neighbors! p (hash-ref connections-by-province id '()))
-        (set-province-occupying-armies! p (hash-ref armies-by-location id '()))
-        (set-province-armies! p (hash-ref armies-by-province id '())))))
-
-(json-response
-  (hash
-    'armies (armies->jsexpr armies)
-    'nations (nations->jsexpr nations)
-    'provinces (provinces->jsexpr provinces)
-    'users (users->jsexpr users))))
-
-(define (start request)
-  (api-dispatch request))
-
-(require web-server/servlet-env)
-(serve/servlet
-  start
-  #:servlet-path ""
-  #:port 8080
-  #:servlet-regexp #rx""
-  #:launch-browser? #f)
+(run #:servlet-path ""
+     #:port 8080
+     #:launch-browser? #f
+     #:response-maker json-response-maker)
